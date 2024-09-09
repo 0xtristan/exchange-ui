@@ -61,7 +61,6 @@ export const PositionsTable: React.FC = () => {
       // }
       const provider = await wallets[0]?.getProvider();
       // console.log(wallets[0]);
-      console.log("DEBUG:", provider);
       const publicKey = wallet.address;
       const sovWallet = new PrivyWallet(publicKey, provider);
       // const sovWallet = BrowserWallet.fromWalletAdapter(wallet);
