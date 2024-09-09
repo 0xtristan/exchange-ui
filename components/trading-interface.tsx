@@ -59,11 +59,11 @@ export const PositionsTable: React.FC = () => {
       //   console.log("No solana wallets found");
       //   return;
       // }
-      // const provider = await wallets[0]?.getProvider();
+      const provider = await wallets[0]?.getProvider();
       // console.log(wallets[0]);
-      // console.log(provider);
+      console.log("DEBUG:", provider);
       const publicKey = wallet.address;
-      const sovWallet = new PrivyWallet(publicKey, null);
+      const sovWallet = new PrivyWallet(publicKey, provider);
       // const sovWallet = BrowserWallet.fromWalletAdapter(wallet);
 
       try {
@@ -108,7 +108,7 @@ export const PositionsTable: React.FC = () => {
     const interval = setInterval(fetchPositionsAndOrders, 5000);
 
     return () => clearInterval(interval);
-  }, [authenticated]);
+  }, [authenticated, user, wallets]);
 
   return (
     <div className="h-full w-full bg-black text-gray-300 p-2 flex flex-col">

@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-// import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { Asset, Client, Side } from "@zetamarkets/zetax-sdk";
 import { BrowserWallet } from "@/app/utils/BrowserWallet";
 import { toast } from "react-toastify";
@@ -28,8 +28,8 @@ const OrderEntry: React.FC<OrderEntryProps> = ({ selectedPrice }) => {
   const [price, setPrice] = useState(selectedPrice);
   const [orderType, setOrderType] = useState<"limit" | "market">("limit");
   const [leverage, setLeverage] = useState<number>(1);
-  // const wallet = useWallet();
-  const { signMessage, } = usePrivy();
+  const wallet = useWallet();
+  const { signMessage } = usePrivy();
   const [client, setClient] = useState<Client | null>(null);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
