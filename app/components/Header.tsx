@@ -1,17 +1,13 @@
 "use client";
 
 import React from "react";
-import dynamic from "next/dynamic";
+import { WalletConnectButton } from "./WalletConnectButton";
 
-const LoginButton = dynamic(() => import("./LoginButton"), { ssr: false });
-
-const Header: React.FC = () => {
+export default function Header() {
   return (
-    <header className="flex justify-between items-center p-4 bg-gray-800 text-white">
-      <h1 className="text-2xl font-bold">Exchange UI (Cursor + v0)</h1>
-      <LoginButton />
+    <header className="p-4 flex justify-between items-center bg-gray-800">
+      <h1 className="text-xl font-bold">Your App Title</h1>
+      <WalletConnectButton />
     </header>
   );
-};
-
-export default Header;
+}

@@ -10,10 +10,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ExchangeConnection, Position, Order } from "@zetamarkets/zetax-sdk";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { BrowserWallet } from "@/app/utils/BrowserWallet";
-
+import { ExchangeConnection, Order } from "@zetamarkets/zetax-sdk";
+import { BrowserWallet, PrivyWallet } from "@/app/utils/BrowserWallet";
+import {
+  usePrivy,
+  useSolanaWallets,
+  WalletWithMetadata,
+} from "@privy-io/react-auth";
 export const PositionsTable: React.FC = () => {
   const [positions, setPositions] = useState<
     {
@@ -25,12 +28,43 @@ export const PositionsTable: React.FC = () => {
   >([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState("positions");
-  const wallet = useWallet();
+  const { user, authenticated } = usePrivy();
+  const { wallets } = useSolanaWallets();
 
   useEffect(() => {
     const fetchPositionsAndOrders = async () => {
-      const sovWallet = BrowserWallet.fromWalletAdapter(wallet);
-      if (!wallet.connected || !wallet.publicKey || !sovWallet) return;
+      if (!authenticated) {
+        console.log("Not authenticated");
+        return;
+      }
+
+      if (!user) {
+        console.log("User not logged in");
+        return;
+      }
+      const wallet = user.linkedAccounts.find(
+        (account): account is WalletWithMetadata =>
+          account.type === "wallet" &&
+          account.walletClientType === "privy" &&
+          account.chainType === "solana"
+      );
+      if (!wallet) {
+        console.log("No wallet found");
+        return;
+      }
+      console.log(wallet);
+
+      // For some reason provider coming up as zero
+      // if (wallets.length === 0) {
+      //   console.log("No solana wallets found");
+      //   return;
+      // }
+      // const provider = await wallets[0]?.getProvider();
+      // console.log(wallets[0]);
+      // console.log(provider);
+      const publicKey = wallet.address;
+      const sovWallet = new PrivyWallet(publicKey, null);
+      // const sovWallet = BrowserWallet.fromWalletAdapter(wallet);
 
       try {
         const exchange = new ExchangeConnection(
@@ -52,7 +86,7 @@ export const PositionsTable: React.FC = () => {
             .sort((a, b) => {
               // First, sort by order_id in descending order
               if (b.order_id !== a.order_id) {
-                return b.order_id - a.order_id;
+                return Number(b.order_id) - Number(a.order_id);
               }
               // If order_ids are the same, sort by price (for limit orders)
               if (a.price !== b.price) {
@@ -71,10 +105,10 @@ export const PositionsTable: React.FC = () => {
     };
 
     fetchPositionsAndOrders();
-    const interval = setInterval(fetchPositionsAndOrders, 1000);
+    const interval = setInterval(fetchPositionsAndOrders, 5000);
 
     return () => clearInterval(interval);
-  }, [wallet.connected, wallet.publicKey]);
+  }, [authenticated]);
 
   return (
     <div className="h-full w-full bg-black text-gray-300 p-2 flex flex-col">

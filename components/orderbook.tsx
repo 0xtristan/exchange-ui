@@ -94,7 +94,7 @@ const Orderbook: React.FC<OrderbookProps> = ({ onPriceSelect }) => {
     };
 
     fetchOrderbook();
-    const interval = setInterval(fetchOrderbook, 1000);
+    const interval = setInterval(fetchOrderbook, 5000);
 
     return () => clearInterval(interval);
   }, []);
@@ -211,20 +211,6 @@ const Orderbook: React.FC<OrderbookProps> = ({ onPriceSelect }) => {
           ))}
         </div>
       </div>
-      {/* <div className="flex justify-between items-center p-2 border-t border-gray-800">
-        <div className="flex items-center space-x-1">
-          <Badge variant="default" className="bg-green-500 text-xs">
-            B
-          </Badge>
-          <span className="text-green-500 text-xs">15%</span>
-        </div>
-        <div className="flex items-center space-x-1">
-          <span className="text-red-500 text-xs">85%</span>
-          <Badge variant="default" className="bg-red-500 text-xs">
-            S
-          </Badge>
-        </div>
-      </div> */}
     </div>
   );
 };

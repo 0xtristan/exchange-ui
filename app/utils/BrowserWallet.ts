@@ -1,4 +1,9 @@
-import { Wallet, PublicKey, bytesToHex } from "@zetamarkets/zetax-sdk";
+import {
+  Wallet,
+  PublicKey,
+  bytesToHex,
+  base58ToHex,
+} from "@zetamarkets/zetax-sdk";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import { Transaction } from "@solana/web3.js";
 
@@ -43,5 +48,36 @@ export class BrowserWallet extends Wallet {
       throw new Error("Wallet does not support message signing");
     }
     return await this.walletAdapter.signMessage(message);
+  }
+}
+
+export class PrivyWallet extends Wallet {
+  private provider: any;
+  constructor(publicKey: PublicKey, provider: any) {
+    const publicKeyHex = base58ToHex(publicKey);
+    super(publicKeyHex);
+    this.provider = provider;
+  }
+
+  async signTransaction(transaction: Transaction): Promise<Transaction> {
+    throw new Error("Privy wallet does not support transaction signing");
+  }
+
+  async signAllTransactions(
+    transactions: Transaction[]
+  ): Promise<Transaction[]> {
+    throw new Error(
+      "Privy wallet does not support signing multiple transactions"
+    );
+  }
+
+  protected async signMessage(message: Uint8Array): Promise<any> {
+    const encodedMessage = Buffer.from(message).toString("base64");
+    const { signature } = await this.provider.request({
+      method: "signMessage",
+      params: {
+        message: encodedMessage,
+      },
+    });
   }
 }
