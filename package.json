@@ -19,6 +19,7 @@
     "@zetamarkets/zetax-sdk": "file:../zetax-sdk",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.437.0",
     "next": "14.2.7",
     "pino-pretty": "^11.2.2",

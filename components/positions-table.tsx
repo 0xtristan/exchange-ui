@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -11,12 +11,9 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ExchangeConnection, Order } from "@zetamarkets/zetax-sdk";
-import { BrowserWallet, PrivyWallet } from "@/app/utils/BrowserWallet";
-import {
-  usePrivy,
-  useSolanaWallets,
-  WalletWithMetadata,
-} from "@privy-io/react-auth";
+import { PrivyWallet } from "@/app/utils/BrowserWallet";
+import { usePrivy, useSolanaWallets } from "@privy-io/react-auth";
+
 export const PositionsTable: React.FC = () => {
   const [positions, setPositions] = useState<
     {
@@ -28,43 +25,24 @@ export const PositionsTable: React.FC = () => {
   >([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState("positions");
-  const { user, authenticated } = usePrivy();
+  const { ready, authenticated } = usePrivy();
   const { wallets } = useSolanaWallets();
+
+  // Memoize the wallet
+  const currentWallet = useMemo(() => wallets[0], [wallets]);
 
   useEffect(() => {
     const fetchPositionsAndOrders = async () => {
-      if (!authenticated) {
-        console.log("Not authenticated");
+      if (!ready || !authenticated || !currentWallet) {
+        console.log("Not ready for initialization");
         return;
       }
 
-      if (!user) {
-        console.log("User not logged in");
-        return;
-      }
-      const wallet = user.linkedAccounts.find(
-        (account): account is WalletWithMetadata =>
-          account.type === "wallet" &&
-          account.walletClientType === "privy" &&
-          account.chainType === "solana"
-      );
-      if (!wallet) {
-        console.log("No wallet found");
-        return;
-      }
-      console.log(wallet);
+      const provider = await currentWallet.getProvider();
+      const publicKey = currentWallet.address;
+      console.log("Initializing exchange for", publicKey);
 
-      // For some reason provider coming up as zero
-      // if (wallets.length === 0) {
-      //   console.log("No solana wallets found");
-      //   return;
-      // }
-      // const provider = await wallets[0]?.getProvider();
-      // console.log(wallets[0]);
-      // console.log(provider);
-      const publicKey = wallet.address;
-      const sovWallet = new PrivyWallet(publicKey, null);
-      // const sovWallet = BrowserWallet.fromWalletAdapter(wallet);
+      const sovWallet = new PrivyWallet(publicKey, provider);
 
       try {
         const exchange = new ExchangeConnection(
@@ -108,7 +86,7 @@ export const PositionsTable: React.FC = () => {
     const interval = setInterval(fetchPositionsAndOrders, 5000);
 
     return () => clearInterval(interval);
-  }, [authenticated]);
+  }, [ready, authenticated, currentWallet]);
 
   return (
     <div className="h-full w-full bg-black text-gray-300 p-2 flex flex-col">
@@ -250,3 +228,5 @@ export const PositionsTable: React.FC = () => {
     </div>
   );
 };
+
+export default React.memo(PositionsTable);

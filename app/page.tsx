@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import TradingViewChart from "./components/TradingViewChart";
-import { PositionsTable } from "@/components/trading-interface";
 import Orderbook from "@/components/orderbook";
-import OrderEntry from "@/components/order-entry";
+import React, { Suspense } from 'react';
+
+const OrderEntry = React.lazy(() => import('@/components/order-entry'));
+const PositionsTable = React.lazy(() => import('@/components/positions-table'));
 
 export default function Home() {
   const [selectedPrice, setSelectedPrice] = useState<string>("");
@@ -14,17 +16,23 @@ export default function Home() {
       <main className="flex flex-1 overflow-hidden">
         <div className="flex w-[80%] flex-col">
           <div className="flex h-[70%]">
-            <div className="w-3/4 bg-black">{/* <TradingViewChart /> */}</div>
+            <div className="w-3/4 bg-black">
+              <TradingViewChart />
+            </div>
             <div className="w-1/4 bg-black border-l border-gray-800">
-              {/* <Orderbook onPriceSelect={setSelectedPrice} /> */}
+              <Orderbook onPriceSelect={setSelectedPrice} />
             </div>
           </div>
           <div className="h-[30%] w-full bg-black border-t border-gray-800">
-            <PositionsTable />
+            <Suspense fallback={<div>Loading...</div>}>
+              <PositionsTable />
+            </Suspense>
           </div>
         </div>
         <div className="w-[20%] bg-black border-l border-gray-800">
-          {/* <OrderEntry selectedPrice={selectedPrice} /> */}
+          <Suspense fallback={<div>Loading...</div>}>
+            <OrderEntry selectedPrice={selectedPrice} />
+          </Suspense>
         </div>
       </main>
     </div>

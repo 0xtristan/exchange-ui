@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Select,
   SelectTrigger,
@@ -10,12 +10,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-// import { useWallet } from "@solana/wallet-adapter-react";
 import { Asset, Client, Side } from "@zetamarkets/zetax-sdk";
-import { BrowserWallet } from "@/app/utils/BrowserWallet";
+import { PrivyWallet } from "@/app/utils/BrowserWallet";
 import { toast } from "react-toastify";
 import DepositModal from "./DepositModal";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useSolanaWallets } from "@privy-io/react-auth";
 
 interface OrderEntryProps {
   selectedPrice: string;
@@ -28,55 +27,57 @@ const OrderEntry: React.FC<OrderEntryProps> = ({ selectedPrice }) => {
   const [price, setPrice] = useState(selectedPrice);
   const [orderType, setOrderType] = useState<"limit" | "market">("limit");
   const [leverage, setLeverage] = useState<number>(1);
-  // const wallet = useWallet();
-  const { signMessage, } = usePrivy();
   const [client, setClient] = useState<Client | null>(null);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const { ready, authenticated } = usePrivy();
+  const { wallets } = useSolanaWallets();
+
+  // Memoize the wallet
+  const currentWallet = useMemo(() => wallets[0], [wallets]);
 
   useEffect(() => {
-    if (selectedPrice) {
-      setPrice(selectedPrice);
-    }
+    setPrice(selectedPrice);
   }, [selectedPrice]);
 
-  useEffect(() => {
-    const initExchange = async () => {
-      const sovWallet = BrowserWallet.fromWalletAdapter(wallet);
-      if (!wallet.connected || !wallet.publicKey || !sovWallet) return;
+  const initExchange = useCallback(async () => {
+    if (!ready || !authenticated || !currentWallet) {
+      console.log("Not ready for initialization");
+      return;
+    }
 
-      try {
-        const newClient = new Client(
-          "http://127.0.0.1",
-          9080,
-          12346,
-          sovWallet
-        );
-        setClient(newClient);
+    const provider = await currentWallet.getProvider();
+    const publicKey = currentWallet.address;
+    console.log("Initializing exchange for", publicKey);
 
-        const cmaData = await newClient.exchange.getCrossMarginAccount(
-          sovWallet.address
-        );
-        if (cmaData) {
-          setMarginBalance(cmaData.scaled_deposits["SOL"]);
-          setAvailableBalance(cmaData.scaled_deposits["SOL"]);
-        }
-      } catch (error) {
-        console.error("Error initializing exchange:", error);
+    const sovWallet = new PrivyWallet(publicKey, provider);
+
+    try {
+      const newClient = new Client("http://127.0.0.1", 9080, 12346, sovWallet);
+      setClient(newClient);
+
+      const cmaData = await newClient.exchange.getCrossMarginAccount(
+        sovWallet.address
+      );
+      if (cmaData) {
+        setMarginBalance(cmaData.scaled_deposits.SOL);
+        setAvailableBalance(cmaData.scaled_deposits.SOL);
       }
-    };
+    } catch (error) {
+      console.error("Error initializing exchange:", error);
+    }
+  }, [ready, authenticated, currentWallet]);
 
-    initExchange();
-  }, [wallet.connected, wallet.publicKey]);
-
-  // Add this new useEffect hook to listen for wallet connection changes
   useEffect(() => {
-    if (!wallet.connected) {
-      // Clear margin account state when wallet is disconnected
+    initExchange();
+  }, [initExchange]);
+
+  useEffect(() => {
+    if (!authenticated) {
       setMarginBalance(0);
       setAvailableBalance(0);
       setClient(null);
     }
-  }, [wallet.connected]);
+  }, [authenticated]);
 
   const calculateValue = (): string => {
     if (quantity && price) {
@@ -316,4 +317,4 @@ const OrderEntry: React.FC<OrderEntryProps> = ({ selectedPrice }) => {
   );
 };
 
-export default OrderEntry;
+export default React.memo(OrderEntry);

@@ -7,7 +7,6 @@ import {
   Wallet,
   WalletWithMetadata,
 } from "@privy-io/react-auth";
-import { useRouter } from "next/navigation";
 
 export function WalletConnectButton() {
   const { logout, authenticated, user } = usePrivy();
@@ -27,13 +26,20 @@ export function WalletConnectButton() {
     },
   });
 
-  if (authenticated) {
+  if (authenticated && user) {
+    // Get static solana wallet object for the address
+    const wallet = user.linkedAccounts.find(
+      (account): account is WalletWithMetadata =>
+        account.type === "wallet" &&
+        account.walletClientType === "privy" &&
+        account.chainType === "solana"
+    );
     return (
       <button
         onClick={logout}
         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
       >
-        Disconnect {user?.wallet?.address?.slice(0, 6)}...
+        Disconnect {wallet?.address?.slice(0, 6)}...
       </button>
     );
   }
