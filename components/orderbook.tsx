@@ -84,7 +84,8 @@ const Orderbook: React.FC<OrderbookProps> = ({ onPriceSelect }) => {
             // Center the orderbook only on initial load
             if (!hasScrolled.current && orderbookRef.current) {
               const midpoint = orderbookRef.current.scrollHeight / 2;
-              orderbookRef.current.scrollTop = midpoint - orderbookRef.current.clientHeight / 2;
+              orderbookRef.current.scrollTop =
+                midpoint - orderbookRef.current.clientHeight / 2;
             }
           }
         }
@@ -107,12 +108,12 @@ const Orderbook: React.FC<OrderbookProps> = ({ onPriceSelect }) => {
 
     const orderbookElement = orderbookRef.current;
     if (orderbookElement) {
-      orderbookElement.addEventListener('scroll', handleScroll);
+      orderbookElement.addEventListener("scroll", handleScroll);
     }
 
     return () => {
       if (orderbookElement) {
-        orderbookElement.removeEventListener('scroll', handleScroll);
+        orderbookElement.removeEventListener("scroll", handleScroll);
       }
     };
   }, []);

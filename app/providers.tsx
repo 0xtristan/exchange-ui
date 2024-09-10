@@ -13,7 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           accentColor: "#38CCCD",
           theme: "#222224",
           showWalletLoginFirst: false,
-          logo: "https://pub-dc971f65d0aa41d18c1839f8ab426dcb.r2.dev/privy-dark.png",
+          // logo: "https://pub-dc971f65d0aa41d18c1839f8ab426dcb.r2.dev/privy-dark.png",
         },
         embeddedWallets: {
           createOnLogin: "users-without-wallets",
@@ -27,9 +27,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           // "discord",
           // "telegram",
         ],
-        // supportedChains: [
-        //   { id: 'solana:mainnet', name: 'Solana' },
-        // ],
       }}
     >
       {children}
