@@ -14,7 +14,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 
 interface OrderbookLevel {
   price: number;
@@ -95,7 +94,7 @@ const Orderbook: React.FC<OrderbookProps> = ({ onPriceSelect }) => {
     };
 
     fetchOrderbook();
-    const interval = setInterval(fetchOrderbook, 5000);
+    const interval = setInterval(fetchOrderbook, 1000);
 
     return () => clearInterval(interval);
   }, []);

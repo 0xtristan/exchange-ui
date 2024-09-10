@@ -83,7 +83,7 @@ export const PositionsTable: React.FC = () => {
     };
 
     fetchPositionsAndOrders();
-    const interval = setInterval(fetchPositionsAndOrders, 5000);
+    const interval = setInterval(fetchPositionsAndOrders, 1000);
 
     return () => clearInterval(interval);
   }, [ready, authenticated, currentWallet]);

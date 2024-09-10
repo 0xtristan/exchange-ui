@@ -9,12 +9,13 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Asset, Client, Side } from "@zetamarkets/zetax-sdk";
 import { PrivyWallet } from "@/app/utils/BrowserWallet";
 import { toast } from "react-toastify";
 import DepositModal from "./DepositModal";
 import { usePrivy, useSolanaWallets } from "@privy-io/react-auth";
+import Image from "next/image";
+import { CrossMarginAccount } from "@zetamarkets/zetax-sdk";
 
 interface OrderEntryProps {
   selectedPrice: string;
@@ -32,7 +33,6 @@ const OrderEntry: React.FC<OrderEntryProps> = ({ selectedPrice }) => {
   const { ready, authenticated } = usePrivy();
   const { wallets } = useSolanaWallets();
 
-  // Memoize the wallet
   const currentWallet = useMemo(() => wallets[0], [wallets]);
 
   useEffect(() => {
@@ -55,17 +55,29 @@ const OrderEntry: React.FC<OrderEntryProps> = ({ selectedPrice }) => {
       const newClient = new Client("http://127.0.0.1", 9080, 12346, sovWallet);
       setClient(newClient);
 
-      const cmaData = await newClient.exchange.getCrossMarginAccount(
-        sovWallet.address
-      );
-      if (cmaData) {
-        setMarginBalance(cmaData.scaled_deposits.SOL);
-        setAvailableBalance(cmaData.scaled_deposits.SOL);
-      }
+      await updateBalance(newClient, sovWallet.address);
     } catch (error) {
       console.error("Error initializing exchange:", error);
     }
   }, [ready, authenticated, currentWallet]);
+
+  const updateBalance = async (client: Client, address: string) => {
+    try {
+      const cmaData: CrossMarginAccount =
+        await client.exchange.getCrossMarginAccount(address);
+      console.log("CMA Data:", cmaData);
+      if (cmaData && cmaData.scaled_deposits) {
+        const usdcBalance = cmaData.scaled_deposits.USDC || 0;
+        console.log("USDC Balance:", usdcBalance);
+        setMarginBalance(usdcBalance);
+        setAvailableBalance(usdcBalance);
+      } else {
+        console.log("No scaled deposits found in CMA data");
+      }
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+    }
+  };
 
   useEffect(() => {
     initExchange();
@@ -109,23 +121,27 @@ const OrderEntry: React.FC<OrderEntryProps> = ({ selectedPrice }) => {
     }
 
     try {
-      const asset = Asset.SOL; // Assuming SOL as the asset, adjust if needed
+      const asset = Asset.SOL;
       const size = parseFloat(quantity);
       const priceValue = parseFloat(price);
 
       const order = await client.placeOrder(asset, priceValue, size, side);
       console.log("Order placed successfully:", order);
       toast.success(
-        `${side === Side.Bid ? "Buy" : "Sell"} order placed successfully`
+        `${side === Side.Bid ? "Buy" : "Sell"} order placed successfully`,
+        { autoClose: 1000 }
       );
       setQuantity("");
       setPrice("");
+
+      await updateBalance(client, client.provider.wallet.address);
     } catch (error) {
       console.error("Error placing order:", error);
       toast.error(
         `Failed to place ${
           side === Side.Bid ? "buy" : "sell"
-        } order. Please try again.`
+        } order. Please try again.`,
+        { autoClose: 1000 }
       );
     }
   };
@@ -137,22 +153,38 @@ const OrderEntry: React.FC<OrderEntryProps> = ({ selectedPrice }) => {
     }
 
     try {
-      const tx = await client.deposit(Asset.SOL, depositAmount);
-
+      const tx = await client.deposit(Asset.USDC, depositAmount);
       console.log("Deposit transaction:", tx);
-      toast.success(`Successfully deposited ${depositAmount} USDC`);
 
-      // Refresh balances
-      const cmaData = await client.exchange.getCrossMarginAccount(
-        client.provider.wallet.address
-      );
-      if (cmaData) {
-        setMarginBalance(cmaData.scaled_deposits["SOL"]);
-        setAvailableBalance(cmaData.scaled_deposits["SOL"]);
-      }
+      setIsDepositModalOpen(false);
+
+      // Update balance a second after deposit
+      setTimeout(async () => {
+        await forceUpdateBalance(client, client.provider.wallet.address);
+      }, 1000);
+      
+      toast.success("Deposit successful!", { autoClose: 1000 });
     } catch (error) {
       console.error("Error depositing:", error);
-      toast.error("Failed to deposit. Please try again.");
+      toast.error("Deposit failed. Please try again.");
+    }
+  };
+
+  const forceUpdateBalance = async (client: Client, address: string) => {
+    try {
+      const cmaData: CrossMarginAccount =
+        await client.exchange.getCrossMarginAccount(address);
+      console.log("CMA Data after deposit:", cmaData);
+      if (cmaData && cmaData.scaled_deposits) {
+        const usdcBalance = cmaData.scaled_deposits.USDC || 0;
+        console.log("New USDC Balance:", usdcBalance);
+        setMarginBalance(usdcBalance);
+        setAvailableBalance(usdcBalance);
+      } else {
+        console.log("No scaled deposits found in CMA data after deposit");
+      }
+    } catch (error) {
+      console.error("Error fetching balance after deposit:", error);
     }
   };
 
@@ -253,12 +285,6 @@ const OrderEntry: React.FC<OrderEntryProps> = ({ selectedPrice }) => {
           <div className="text-muted-foreground">Cost</div>
           <div className="text-white">{calculateCost()} USD</div>
         </div>
-        <div className="flex items-center mb-4">
-          <Checkbox id="take-profit" />
-          <label htmlFor="take-profit" className="text-white ml-2">
-            Take Profit / Stop Loss
-          </label>
-        </div>
         <div className="flex justify-between mb-4 space-x-2">
           <Button
             className="flex-1 bg-green-500 text-white"
@@ -294,9 +320,16 @@ const OrderEntry: React.FC<OrderEntryProps> = ({ selectedPrice }) => {
           </div>
         </div>
         <div className="flex justify-between mb-3">
-          <div className="text-gray-500 text-xs">Margin Balance</div>
-          <div className="text-gray-300 text-sm">
-            {Number(marginBalance).toFixed(2)} USD
+          <div className="text-gray-500 text-xs">Balance</div>
+          <div className="text-gray-300 text-sm flex items-center">
+            <Image
+              src="/usdc-logo.png"
+              alt="USDC"
+              width={16}
+              height={16}
+              className="mr-1"
+            />
+            {marginBalance.toFixed(2)} USDC
           </div>
         </div>
         <div className="flex justify-between space-x-2">
@@ -304,7 +337,7 @@ const OrderEntry: React.FC<OrderEntryProps> = ({ selectedPrice }) => {
             className="flex-1 bg-[#2b2b2b] text-white"
             onClick={() => setIsDepositModalOpen(true)}
           >
-            Deposit
+            Deposit USDC
           </Button>
         </div>
       </div>

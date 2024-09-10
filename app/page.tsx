@@ -3,16 +3,18 @@
 import { useState } from "react";
 import TradingViewChart from "./components/TradingViewChart";
 import Orderbook from "@/components/orderbook";
-import React, { Suspense } from 'react';
+import React, { Suspense } from "react";
+import Header from "./components/Header";
 
-const OrderEntry = React.lazy(() => import('@/components/order-entry'));
-const PositionsTable = React.lazy(() => import('@/components/positions-table'));
+const OrderEntry = React.lazy(() => import("@/components/order-entry"));
+const PositionsTable = React.lazy(() => import("@/components/positions-table"));
 
 export default function Home() {
   const [selectedPrice, setSelectedPrice] = useState<string>("");
 
   return (
     <div className="flex flex-col h-screen bg-black text-gray-300">
+      <Header />
       <main className="flex flex-1 overflow-hidden">
         <div className="flex w-[80%] flex-col">
           <div className="flex h-[70%]">
